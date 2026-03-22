@@ -1,0 +1,132 @@
+# Everything Claude Code 全局安装完成
+
+## 安装概要
+
+| 项目 | 详情 |
+|------|------|
+| **安装路径** | `C:\Users\Admin\.agent\` |
+| **Skills (智能体)** | 25 个 `.md` 文件 |
+| **Workflows (工作流/命令)** | 57 个 `.md` 文件 |
+| **配置文件** | `AGENTS.md` + `ecc-install-state.json` |
+| **源仓库** | [affaan-m/everything-claude-code](https://github.com/affaan-m/everything-claude-code) v1.8.0 |
+| **安装语言栈** | TypeScript + Python |
+
+---
+
+## 核心功能使用说明
+
+### 1. 工作流 / 斜杠命令 (Workflows)
+
+在 Antigravity 中，ECC 的 commands 被映射为 workflows。通过 `/workflow-name` 触发。
+
+#### 🔥 最常用的命令
+
+| 命令 | 用途 |
+|------|------|
+| `/plan "描述"` | 功能实现规划，生成详细实施蓝图 |
+| `/tdd` | 测试驱动开发：先写测试 → 实现 → 重构 |
+| `/code-review` | 代码质量与安全审查 |
+| `/build-fix` | 自动修复构建错误 |
+| `/e2e` | 生成 Playwright E2E 测试 |
+| `/refactor-clean` | 清理死代码、重构 |
+| `/test-coverage` | 测试覆盖率分析 |
+| `/update-docs` | 自动更新文档 |
+| `/verify` | 运行验证循环 |
+| `/python-review` | Python 专项代码审查 |
+
+#### 🧠 学习与记忆
+
+| 命令 | 用途 |
+|------|------|
+| `/learn` | 从当前会话中提取模式和经验 |
+| `/learn-eval` | 提取、评估并保存学习到的模式 |
+| `/instinct-status` | 查看已学习的"本能" |
+| `/instinct-import` | 导入本能 |
+| `/instinct-export` | 导出本能 |
+| `/evolve` | 将本能聚类升级为技能 |
+
+#### 🤖 多智能体协作
+
+| 命令 | 用途 |
+|------|------|
+| `/multi-plan` | 多智能体任务分解 |
+| `/multi-execute` | 编排多智能体工作流 |
+| `/multi-backend` | 后端多服务编排 |
+| `/multi-frontend` | 前端多服务编排 |
+| `/orchestrate` | 多智能体协调 |
+| `/devfleet` | 开发舰队模式 |
+
+#### 🔧 其他实用命令
+
+| 命令 | 用途 |
+|------|------|
+| `/sessions` | 会话历史管理 |
+| `/save-session` | 保存当前会话状态 |
+| `/resume-session` | 恢复之前的会话 |
+| `/checkpoint` | 保存验证检查点 |
+| `/pm2` | PM2 服务生命周期管理 |
+| `/skill-create` | 从 git 历史生成新技能 |
+| `/prompt-optimize` | 优化 prompt |
+| `/harness-audit` | 审计工具性能 |
+
+---
+
+### 2. 智能体 Skills（25个专家代理）
+
+| 智能体 | 职责 |
+|--------|------|
+| `planner` | 功能实现规划 |
+| `architect` | 系统设计决策 |
+| `tdd-guide` | 测试驱动开发指导 |
+| `code-reviewer` | 代码质量和安全审查 |
+| `security-reviewer` | 漏洞分析 |
+| `build-error-resolver` | 构建错误修复 |
+| `e2e-runner` | Playwright E2E 测试 |
+| `refactor-cleaner` | 死代码清理 |
+| `doc-updater` | 文档同步 |
+| `python-reviewer` | Python 代码审查 |
+| `go-reviewer` | Go 代码审查 |
+| `rust-reviewer` | Rust 代码审查 |
+| `loop-operator` | 自主循环操作 |
+| `kotlin-reviewer` | Kotlin 代码审查 |
+| `java-reviewer` | Java 代码审查 |
+| ... | 以及更多语言特定的审查和构建修复智能体 |
+
+---
+
+### 3. 常用工作流示例
+
+#### 开始一个新功能
+```
+/plan "添加用户认证和 OAuth 登录"
+→ planner 创建实施蓝图
+/tdd
+→ tdd-guide 强制先写测试
+/code-review
+→ code-reviewer 检查你的代码
+```
+
+#### 修复 Bug
+```
+/tdd
+→ 先写一个复现 bug 的失败测试
+→ 实现修复，验证测试通过
+/code-review
+→ 检查是否有回归
+```
+
+#### 上线准备
+```
+/code-review    → 代码质量审查
+/e2e            → 关键用户流程测试
+/test-coverage  → 验证 80%+ 覆盖率
+```
+
+---
+
+## ⚠️ 注意事项
+
+1. **Antigravity 兼容性**：ECC 原生设计为 Claude Code CLI 插件，在 Antigravity 中以 workflows/skills 形式运行，部分自动化 hooks 功能不可用
+2. **更新方式**：拉取最新仓库后重新运行安装脚本即可更新
+3. **Rules 未安装**：ECC 的 rules（编码规范）需要根据需要手动从 `$TEMP\everything-claude-code\rules\` 复制
+4. **仓库缓存**：源仓库保留在 `C:\Users\Admin\AppData\Local\Temp\everything-claude-code`，可用于更新或查看完整文档
