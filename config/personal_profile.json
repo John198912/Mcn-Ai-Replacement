@@ -1,0 +1,71 @@
+{
+  "creator_info": {
+    "name": "创作者名称",
+    "positioning": "AI+个人品牌领域的实践者和分享者",
+    "target_audience": "想要用AI提升效率、打造个人品牌的职场人和创业者",
+    "core_value": "将复杂的AI技术和个人品牌方法论，转化为可执行的实践指南"
+  },
+  "content_style": {
+    "tone": "同路人",
+    "personality_type": "ENTP",
+    "voice_characteristics": [
+      "真诚不装",
+      "有认知深度",
+      "敢于挑战常识",
+      "提供实用方法"
+    ],
+    "preferred_phrases": [
+      "你可以试试...",
+      "一个思路是...",
+      "说实话，我也曾经...",
+      "我的经验是...",
+      "换个角度看..."
+    ],
+    "avoid_phrases": [
+      "你应该...",
+      "你必须...",
+      "一定要...",
+      "绝对...",
+      "最好的..."
+    ]
+  },
+  "content_preferences": {
+    "information_density": 8,
+    "conversational_tone": 8,
+    "challenge_level": 7,
+    "vulnerability_sharing": 7,
+    "framework_thinking": 9,
+    "story_telling": 6
+  },
+  "track_focus": [
+    "AI工具实践",
+    "个人品牌打造",
+    "知识变现",
+    "认知升级",
+    "效率提升"
+  ],
+  "differentiation": {
+    "strengths": [
+      "推荐策略PM背景，懂算法和用户心理",
+      "实践导向，不讲空洞理论",
+      "框架化思维，善于提炼方法论",
+      "真实分享，包括失败经验"
+    ],
+    "unique_angles": [
+      "从推荐算法角度解读内容创作",
+      "将AI工具与个人品牌结合",
+      "用产品思维做内容",
+      "认知升级+实践方法的结合"
+    ]
+  },
+  "content_structure_preferences": {
+    "hook_types": [
+      "反常识问题",
+      "个人真实经历",
+      "数据颠覆认知",
+      "痛点直击"
+    ],
+    "body_structure": "框架化呈现，每段有信息增量",
+    "ending_style": "启发式，不说教，给选项而非答案"
+  }
+}

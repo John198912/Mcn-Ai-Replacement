@@ -22,3 +22,14 @@ __pycache__/
 # Temp
 *.tmp
 *.bak
+
+# Runtime data
+backups/
+data/database.db
+data/cache/
+hotspots_template.csv
+hotspots_template.json
+
+# Test outputs
+.pytest_cache/
+/tmp/

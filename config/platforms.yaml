@@ -1,0 +1,104 @@
+# 平台配置
+
+platforms:
+  douyin:
+    name: "抖音"
+    content_types:
+      - "短视频"
+      - "直播"
+      - "图文"
+    optimal_duration:
+      short: 15  # 秒
+      medium: 60
+      long: 180
+    algorithm_preferences:
+      - "前3秒留人率"
+      - "完播率"
+      - "互动率"
+      - "转发率"
+    risk_factors:
+      - "导流外链"
+      - "诱导关注"
+      - "搬运抄袭"
+      - "不当获利标识"
+
+  xiaohongshu:
+    name: "小红书"
+    content_types:
+      - "图文笔记"
+      - "视频笔记"
+    optimal_duration:
+      short: 30
+      medium: 90
+      long: 180
+    algorithm_preferences:
+      - "收藏率"
+      - "点赞率"
+      - "评论互动"
+      - "完读率"
+    risk_factors:
+      - "软广未标识"
+      - "虚假分享"
+      - "刷数据暗示"
+      - "引流私域"
+
+  bilibili:
+    name: "B站"
+    content_types:
+      - "视频"
+      - "专栏"
+      - "动态"
+    optimal_duration:
+      short: 180
+      medium: 600
+      long: 1200
+    algorithm_preferences:
+      - "播放完成度"
+      - "三连率"
+      - "弹幕互动"
+      - "投币收藏"
+    risk_factors:
+      - "恰饭未标注"
+      - "标题党"
+      - "低质引流"
+      - "搬运"
+
+  weibo:
+    name: "微博"
+    content_types:
+      - "文字"
+      - "图片"
+      - "视频"
+    optimal_duration:
+      short: 15
+      medium: 60
+      long: 180
+    algorithm_preferences:
+      - "转发量"
+      - "评论量"
+      - "话题参与"
+      - "热度"
+    risk_factors:
+      - "敏感话题"
+      - "虚假信息"
+      - "引战"
+
+  zhihu:
+    name: "知乎"
+    content_types:
+      - "回答"
+      - "文章"
+      - "想法"
+    optimal_duration:
+      short: 120
+      medium: 300
+      long: 600
+    algorithm_preferences:
+      - "赞同数"
+      - "收藏数"
+      - "感谢数"
+      - "完读率"
+    risk_factors:
+      - "软广"
+      - "引流"
+      - "低质内容"
