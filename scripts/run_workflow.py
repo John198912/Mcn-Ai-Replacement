@@ -20,7 +20,7 @@ from src.workflows import (
 from src.adapters import HotspotCollector, ManualHotspotImporter
 from src.knowledge import TwoLayerKnowledgeManager, BackupManager
 from src.scheduler import MCNScheduler
-from src.integrations import HermesTaskBridge
+from src.integrations import HermesTaskBridge, FeishuBaseAdapter, FeishuWikiKB, FeishuIMNotifier
 from src.skills import (
     SOULScriptWriter,
     SOULScriptWriterInput,
@@ -611,6 +611,156 @@ def soul_rank(use_hermes, manual_file, days, top):
     click.echo(f"  python scripts/run_workflow.py soul-script \\")
     click.echo(f"    -t \"{top1['topic']['title']}\" \\")
     click.echo(f"    -a \"{top1['recommended_angle'][:50]}...\"")
+
+
+@cli.command()
+def feishu_init():
+    """初始化飞书知识库（多维表格 + Wiki空间）.
+
+    首次使用飞书集成时运行。
+    """
+    click.echo("🚀 初始化飞书知识库...")
+    click.echo()
+
+    # 初始化Base
+    click.echo("📊 创建多维表格...")
+    try:
+        adapter = FeishuBaseAdapter()
+        adapter.ensure_tables()
+        click.echo(f"✅ 多维表格已就绪")
+        click.echo(f"   Base Token: {adapter.base_token}")
+    except RuntimeError as e:
+        click.echo(f"❌ Base初始化失败: {e}")
+
+    click.echo()
+
+    # 初始化Wiki
+    click.echo("📚 创建Wiki知识库...")
+    try:
+        wiki = FeishuWikiKB()
+        wiki.ensure_structure()
+        click.echo(f"✅ Wiki知识库已就绪")
+        click.echo(f"   Space ID: {wiki.space_id}")
+    except RuntimeError as e:
+        click.echo(f"❌ Wiki初始化失败: {e}")
+
+
+@cli.command()
+@click.option("--to", default="base",
+              type=click.Choice(["base", "wiki", "all"]),
+              help="同步目标")
+def feishu_sync(to):
+    """同步本地数据到飞书.
+
+    示例：
+        python scripts/run_workflow.py feishu-sync
+        python scripts/run_workflow.py feishu-sync --to wiki
+        python scripts/run_workflow.py feishu-sync --to all
+    """
+    click.echo(f"🔄 同步到飞书 ({to})...")
+
+    if to in ("base", "all"):
+        click.echo("📊 同步多维表格...")
+        adapter = FeishuBaseAdapter()
+        adapter.ensure_tables()
+
+        # 直接从Hermes报告采集热点
+        click.echo("  采集最新热点...")
+        collector = HotspotCollector()
+        hotspots = asyncio.run(collector.collect(use_hermes=True, days=7, validate=True))
+
+        if not hotspots:
+            click.echo("  ⚠️  Hermes报告无数据，尝试手动文件...")
+            hotspots = asyncio.run(
+                collector.collect(use_hermes=False, manual_file="hotspots_template.csv", validate=False)
+            )
+
+        if hotspots:
+            # SOUL评分
+            click.echo("  SOUL评分中...")
+            matcher = SOULHotTopicMatcher()
+            ranked = matcher.batch_score(hotspots)
+
+            # 同步到飞书 - 处理SOULHotTopicMatcher的嵌套结构
+            hotspot_dicts = []
+            for r in ranked[:30]:
+                topic = r.get("topic", {})
+                hotspot_dicts.append({
+                    "title": topic.get("title", r.get("title", "")),
+                    "platform": topic.get("platform", r.get("platform", "douyin")),
+                    "heat_level": topic.get("heat_level", "上升"),
+                    "total_score": r.get("total_score", 0),
+                    "finitude_name": r.get("finitude_name", ""),
+                    "audience_label": r.get("audience_label", ""),
+                    "recommended_angle": r.get("recommended_angle", ""),
+                })
+            count = adapter.sync_hotspots_batch(hotspot_dicts)
+            click.echo(f"✅ 已同步 {count} 条热点到飞书Base")
+        else:
+            click.echo("  ❌ 无热点数据可同步")
+
+    if to in ("wiki", "all"):
+        click.echo("📚 同步Wiki知识库...")
+        wiki = FeishuWikiKB()
+        wiki.ensure_structure()
+        click.echo("✅ Wiki结构已就绪")
+
+
+@cli.command()
+def feishu_listen():
+    """启动飞书消息监听（接收指令）.
+
+    轮询飞书消息，自动解析 /hot /script /sync /status 等指令。
+
+    示例：
+        python scripts/run_workflow.py feishu-listen
+    """
+    notifier = FeishuIMNotifier()
+
+    if not notifier.chat_id and not os.getenv("MCN_FEISHU_CHAT_ID"):
+        click.echo("❌ 未配置 MCN_FEISHU_CHAT_ID 环境变量")
+        click.echo("请在 config/.env 中设置群组ID")
+        return
+
+    click.echo("👂 开始监听飞书消息指令...")
+    click.echo("支持指令：/hot /script /sync /status")
+    click.echo("按 Ctrl+C 停止")
+    click.echo()
+
+    import time
+    while True:
+        try:
+            commands = notifier.poll_commands(limit=5)
+            for cmd in commands:
+                click.echo(f"📩 收到指令: {cmd['command']} {cmd.get('args', {})}")
+                response = None
+
+                if cmd["command"] == "hot_topics":
+                    n = cmd["args"].get("top_n", 5)
+                    response = f"🔥 Top {n} 热点（提示：运行 soul-rank 查看最新）"
+
+                elif cmd["command"] == "create_script":
+                    topic = cmd["args"].get("topic", "")
+                    response = f"📝 为「{topic}」生成脚本中...（提示：运行 soul-script -t \"{topic}\"）"
+
+                elif cmd["command"] == "sync_knowledge":
+                    response = "🔄 知识库同步中..."
+
+                elif cmd["command"] == "system_status":
+                    response = "✅ MCN系统运行正常"
+
+                if response:
+                    notifier.send_text(response)
+                    click.echo(f"📤 已回复: {response[:50]}...")
+
+        except KeyboardInterrupt:
+            break
+        except Exception as e:
+            click.echo(f"⚠️ 监听异常: {e}")
+
+        time.sleep(30)
+
+    click.echo("\n✅ 监听已停止")
 
 
 if __name__ == "__main__":

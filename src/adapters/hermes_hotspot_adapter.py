@@ -50,7 +50,10 @@ class HermesHotspotAdapter:
 
         for i in range(days):
             date = (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
+            # 尝试两种命名格式：daily_YYYY-MM-DD.md 和 report_daily_YYYY-MM-DD.md
             report_file = self.reports_dir / f"daily_{date}.md"
+            if not report_file.exists():
+                report_file = self.reports_dir / f"report_daily_{date}.md"
 
             if report_file.exists():
                 try:
@@ -84,35 +87,114 @@ class HermesHotspotAdapter:
     def _parse_hermes_report(self, report_path: Path) -> List[Dict]:
         """解析Hermes报告.
 
-        支持的格式：
+        支持两种格式：
+
+        格式1（新版）：
+        | 优先级 | 标题（原文+中文） | 来源 | 概览 | 关联度 |
+        | P0 | **title**（中文） | source | description | 高 |
+
+        格式2（旧版）：
         ## 🔥 P0 热点（直接选题）
         | 序号 | 话题 | 来源 | 标签 | SOUL适配度 | 推荐角度 |
-
-        ## 🟡 P1 热点（间接相关）
-        | 序号 | 话题 | 来源 | 标签 | 推荐角度 |
         """
         with open(report_path, "r", encoding="utf-8") as f:
             content = f.read()
 
+        # 先尝试新版格式：优先级列 + 标题列
+        hotspots = self._parse_new_format(content)
+        if hotspots:
+            return hotspots
+
+        # 再尝试旧版格式
+        hotspots = []
+        for section_name in ["P0 热点", "P1 热点"]:
+            section = self._extract_section(content, section_name)
+            if section:
+                priority = "P0" if "P0" in section_name else "P1"
+                hotspots.extend(self._parse_hotspot_table(section, priority=priority))
+
+        if hotspots:
+            return hotspots
+
+        # 备用：列表格式
+        return self._parse_list_format(content)
+
+    def _parse_new_format(self, content: str) -> List[Dict]:
+        """解析新版Hermes报告格式（优先级 | 标题 | 来源 | 概览 | 关联度）."""
         hotspots = []
 
-        # 提取P0热点
-        p0_section = self._extract_section(content, "P0 热点")
-        if p0_section:
-            p0_hotspots = self._parse_hotspot_table(p0_section, priority="P0")
-            hotspots.extend(p0_hotspots)
+        # 找到主要的热点表格
+        # 寻找以 | 优先级 | 标题 开头的表格
+        table_pattern = r"\|\s*优先级\s*\|.*?标题.*?\|.*?来源.*?\|.*?(?=\n\n\S|\n##|\Z)"
+        matches = re.findall(table_pattern, content, re.DOTALL)
 
-        # 提取P1热点
-        p1_section = self._extract_section(content, "P1 热点")
-        if p1_section:
-            p1_hotspots = self._parse_hotspot_table(p1_section, priority="P1")
-            hotspots.extend(p1_hotspots)
+        for table_section in matches:
+            lines = table_section.strip().split("\n")
+            # 找到数据行（跳过表头和分隔线）
+            for line in lines:
+                if not line.strip() or line.startswith("|-") or "优先级" in line:
+                    continue
+                cells = [c.strip() for c in line.split("|") if c.strip()]
+                if len(cells) < 4:
+                    continue
 
-        # 如果没有找到表格，尝试解析列表格式
-        if not hotspots:
-            hotspots = self._parse_list_format(content)
+                priority = cells[0] if cells[0] in ("P0", "P1", "P2") else "P1"
+                title_cell = cells[1] if len(cells) > 1 else ""
+
+                # 提取标题：**English title**（中文翻译）→ 取中文部分，无中文则用英文
+                title = self._extract_title(title_cell)
+                platform = self._extract_platform(cells[2] if len(cells) > 2 else "")
+                description = cells[3] if len(cells) > 3 else ""
+                tags = self._extract_tags_from_line(line)
+
+                if title:
+                    hotspots.append({
+                        "title": title,
+                        "platform": platform,
+                        "tags": tags,
+                        "description": description,
+                        "priority": priority,
+                        "heat_level": "上升" if priority == "P0" else "稳定",
+                        "source": "hermes",
+                        "recommended_angle": description[:200] if description else "",
+                    })
 
         return hotspots
+
+    def _extract_title(self, title_cell: str) -> str:
+        """从标题单元格提取可读标题.
+
+        输入：**Ankur Warikoo shuts down...**（印度顶级教育创作者关停...）
+        输出：印度顶级教育创作者关停课程业务，暗示AI巨大冲击
+        """
+        # 优先取中文翻译部分（括号内的中文）
+        m = re.search(r"（([^）]+)）", title_cell)
+        if m:
+            return m.group(1)
+
+        # 否则取英文（去掉 ** 标记）
+        title = re.sub(r"\*\*", "", title_cell)
+        # 截取前100字符
+        return title[:100] if len(title) > 100 else title
+
+    def _extract_platform(self, source: str) -> str:
+        """从来源推断平台."""
+        source_lower = source.lower()
+        if any(p in source_lower for p in ["reddit", "hn", "youtube"]):
+            return "bilibili"  # 海外内容适合B站
+        if any(p in source_lower for p in ["x：", "twitter", "x.com"]):
+            return "douyin"
+        return "douyin"
+
+    def _extract_tags_from_line(self, line: str) -> List[str]:
+        """从行内容提取标签."""
+        tags = []
+        tag_pattern = r"\[([^\]]+)\]"
+        matches = re.findall(tag_pattern, line)
+        for m in matches:
+            parts = [p.strip() for p in m.split("+")]
+            tags.extend(parts)
+        return list(set(tags)) if tags else ["AI"]
 
     def _extract_section(self, content: str, section_name: str) -> str:
         """提取指定section的内容."""
