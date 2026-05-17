@@ -21,6 +21,7 @@ from src.adapters import HotspotCollector, ManualHotspotImporter
 from src.knowledge import TwoLayerKnowledgeManager, BackupManager
 from src.scheduler import MCNScheduler
 from src.integrations import HermesTaskBridge, FeishuBaseAdapter, FeishuWikiKB, FeishuIMNotifier
+from src.analyzers import RulesMonitor, CreatorPipeline, TrendAnalyzer
 from src.skills import (
     SOULScriptWriter,
     SOULScriptWriterInput,
@@ -761,6 +762,136 @@ def feishu_listen():
         time.sleep(30)
 
     click.echo("\n✅ 监听已停止")
+
+
+@cli.command()
+@click.argument("report_path", type=click.Path(exists=True))
+def rules_import(report_path):
+    """导入平台规则变动报告.
+
+    示例：
+        python scripts/run_workflow.py rules-import rules_report.md
+    """
+    monitor = RulesMonitor()
+    stats = monitor.import_report(report_path)
+    click.echo("✅ 规则报告已导入")
+    for platform, count in stats.items():
+        click.echo(f"  📱 {platform}: {count} 条变动")
+
+@cli.command()
+@click.option("-p", "--platform", help="平台筛选")
+def rules_status(platform):
+    """查看各平台规则状态.
+
+    示例：
+        python scripts/run_workflow.py rules-status
+        python scripts/run_workflow.py rules-status -p douyin
+    """
+    monitor = RulesMonitor()
+    status = monitor.status(platform)
+    if not status:
+        click.echo("📭 暂无规则数据，请先导入报告")
+        return
+    for s in status:
+        stance_map = {"tightening": "🔴收紧", "relaxing": "🟢放松", "neutral": "🟡平稳"}
+        click.echo(f"  {s['name']}: {stance_map.get(s['stance'], s['stance'])} "
+                    f"| {s['changes_count']}条变动 | {s['promotions_count']}个扶持")
+
+@cli.command()
+@click.argument("report_path", type=click.Path(exists=True))
+def creator_import(report_path):
+    """导入对标创作者分析报告.
+
+    示例：
+        python scripts/run_workflow.py creator-import creator_report.md
+    """
+    pipeline = CreatorPipeline()
+    stats = pipeline.import_report(report_path)
+    click.echo("✅ 对标报告已导入")
+    for key, val in stats.items():
+        if val:
+            click.echo(f"  📊 {key}: {val}")
+
+@cli.command()
+@click.option("--tier", type=click.Choice(["学习标杆", "成长对标"]), help="层级筛选")
+def creator_list(tier):
+    """列出对标创作者.
+
+    示例：
+        python scripts/run_workflow.py creator-list
+        python scripts/run_workflow.py creator-list --tier 学习标杆
+    """
+    pipeline = CreatorPipeline()
+    creators = pipeline.list_creators(tier=tier)
+    if not creators:
+        click.echo("📭 暂无对标数据，请先导入报告")
+        return
+    click.echo(f"📊 共 {len(creators)} 位对标创作者：\n")
+    for i, c in enumerate(creators[:15], 1):
+        click.echo(f"{i:2}. {c.get('account_name', '?')} | {c.get('platform', '?')} "
+                    f"| {c.get('followers', '?')} | {c.get('tier', '?')}")
+        if c.get("learnable"):
+            click.echo(f"    可学：{c['learnable'][:60]}")
+
+@cli.command()
+@click.option("-t", "--topic", required=True, help="选题关键词")
+def creator_insight(topic):
+    """根据选题查找对标参考.
+
+    示例：
+        python scripts/run_workflow.py creator-insight -t "AI工具"
+    """
+    pipeline = CreatorPipeline()
+    refs = pipeline.get_script_references(topic)
+    if not refs:
+        click.echo(f"📭 未找到「{topic}」相关的对标参考")
+        return
+    click.echo(f"📊 「{topic}」相关对标参考：\n")
+    for r in refs:
+        click.echo(f"  👤 {r['account']} — {r['style']}")
+        click.echo(f"    处理方式：{r['approach'][:80]}")
+
+@cli.command()
+@click.argument("report_path", type=click.Path(exists=True))
+def trend_import(report_path):
+    """导入趋势分析报告.
+
+    示例：
+        python scripts/run_workflow.py trend-import trend_report.md
+    """
+    analyzer = TrendAnalyzer()
+    result = analyzer.import_report(report_path)
+    click.echo("✅ 趋势报告已导入\n")
+    click.echo("🔥 热门子赛道：")
+    for track, weight in result["sub_tracks"].items():
+        if weight >= 0.8:
+            click.echo(f"  ✅ {track} (权重: {weight})")
+    click.echo("\n📉 降温子赛道：")
+    for track, weight in result["sub_tracks"].items():
+        if weight <= 0.3:
+            click.echo(f"  ⚠️ {track} (权重: {weight})")
+    click.echo(f"\n📋 策略建议 ({len(result['strategy']['strategies'])}条)：")
+    for s in result["strategy"]["strategies"]:
+        click.echo(f"  • {s}")
+
+@cli.command()
+def trend_strategy():
+    """生成本月内容策略.
+
+    示例：
+        python scripts/run_workflow.py trend-strategy
+    """
+    analyzer = TrendAnalyzer()
+    strategy = analyzer.generate_monthly_strategy()
+    if "error" in strategy:
+        click.echo(f"❌ {strategy['error']}")
+        return
+    click.echo(f"📅 月度策略 ({strategy['date']})\n")
+    for s in strategy.get("strategies", []):
+        click.echo(f"  • {s}")
+    click.echo(f"\n⚖️ 评分权重调整：")
+    for k, v in strategy.get("scoring_weights", {}).items():
+        click.echo(f"  {k}: {v}")
 
 
 if __name__ == "__main__":

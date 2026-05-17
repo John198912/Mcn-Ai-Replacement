@@ -1,0 +1,72 @@
+{
+  "douyin": {
+    "algorithm_changes": [
+      {
+        "platform": "douyin",
+        "type": "算法调整/社区规则/扶持政策/审核变化",
+        "content": "...",
+        "source": "官方公告/行业解读/创作者反馈",
+        "confidence": "确认/高可信/待验证/传闻",
+        "scope": "全量/部分赛道/特定内容形式",
+        "impact": "大/中/小/无",
+        "date": "2026-05-17"
+      }
+    ],
+    "content_policies": [],
+    "restricted_topics": [],
+    "promotions": [
+      {
+        "platform": "douyin",
+        "name": "算法调整/社区规则/扶持政策/审核变化",
+        "condition": "...",
+        "deadline": "官方公告/行业解读/创作者反馈",
+        "benefit": "确认/高可信/待验证/传闻",
+        "recommend": "全量/部分赛道/特定内容形式"
+      }
+    ],
+    "overall_stance": "tightening",
+    "last_updated": null,
+    "interpretations": [
+      {
+        "title": "[变动标题]",
+        "detail": "",
+        "impact": "",
+        "suggestion": "",
+        "platform": "douyin",
+        "date": "2026-05-17"
+      }
+    ]
+  },
+  "xiaohongshu": {
+    "algorithm_changes": [],
+    "content_policies": [],
+    "restricted_topics": [],
+    "promotions": [],
+    "overall_stance": "tightening",
+    "last_updated": null
+  },
+  "bilibili": {
+    "algorithm_changes": [],
+    "content_policies": [],
+    "restricted_topics": [],
+    "promotions": [],
+    "overall_stance": "tightening",
+    "last_updated": null
+  },
+  "weibo": {
+    "algorithm_changes": [],
+    "content_policies": [],
+    "restricted_topics": [],
+    "promotions": [],
+    "overall_stance": "tightening",
+    "last_updated": null
+  },
+  "zhihu": {
+    "algorithm_changes": [],
+    "content_policies": [],
+    "restricted_topics": [],
+    "promotions": [],
+    "overall_stance": "tightening",
+    "last_updated": "2026-05-17T20:32:24.097261"
+  }
+}
